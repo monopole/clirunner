@@ -1,8 +1,9 @@
 package clirunner_test
 
 import (
-	. "github.com/monopole/clirunner/cmdrs"
 	"testing"
+
+	. "github.com/monopole/clirunner/cmdrs"
 
 	. "github.com/monopole/clirunner"
 	"github.com/stretchr/testify/assert"

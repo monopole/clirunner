@@ -1,4 +1,4 @@
-package cli
+package tstcli
 
 import (
 	"bufio"
@@ -8,6 +8,16 @@ import (
 	"strconv"
 	"strings"
 	"time"
+)
+
+// Program name and flags needed for tests.
+const (
+	// TestCliPath expected to be on the PATH when tests run.
+	TestCliPath       = "testcli"
+	FlagDisablePrompt = "disable-prompt"
+	FlagExitOnErr     = "exit-on-error"
+	FlagNumRowsInDb   = "num-rows-in-db"
+	FlagRowToErrorOn  = "row-to-error-on"
 )
 
 // All individual commands.
@@ -35,6 +45,16 @@ var AllCommands = []string{
 	cmdPrint,
 	CmdQuery,
 }
+
+// Other constants.
+//goland:noinspection SpellCheckingInspection
+const (
+	rowDataDelimiter = "_|_"
+	scanQueryWord    = "query"
+	lookupQueryWord  = "bus"
+	versionOfProgram = "v1.2.3"
+	requestedErrFmt  = "error! touching row %d triggers this error"
+)
 
 // Shell parses stdin, executing anything that validates as a command.
 // See AllCommands for a complete list of recognized commands.
@@ -109,7 +129,7 @@ func (s *Shell) handleCommand(cmd string) (done bool, err error) {
 		return
 	}
 	if cmd == cmdVersion {
-		fmt.Fprintln(s.stdOut, versionOf3DX)
+		fmt.Fprintln(s.stdOut, versionOfProgram)
 		return
 	}
 	if strings.HasPrefix(cmd, CmdSleep+" ") {
@@ -139,7 +159,7 @@ func (s *Shell) handleCommand(cmd string) (done bool, err error) {
 	if strings.HasPrefix(cmd, cmdPrint+" ") {
 		// Do a lookup.
 		var id string
-		id, err = parseNodeLookupQuery(cmd)
+		id, err = parseLookupQuery(cmd)
 		if err != nil {
 			return
 		}
@@ -148,7 +168,7 @@ func (s *Shell) handleCommand(cmd string) (done bool, err error) {
 	if strings.Contains(cmd, CmdQuery) {
 		// Try a query.
 		var offset, limit int
-		offset, limit, err = parseNodeScanQuery(cmd)
+		offset, limit, err = parseScanQuery(cmd)
 		if err != nil {
 			return
 		}
@@ -165,24 +185,24 @@ func normalizeCommand(c string) string {
 	return c
 }
 
-// parseNodeLookupQuery looks for "print bus AE000F"
+// parseLookupQuery looks for "print bus AE000F"
 // and returns the id or error
-func parseNodeLookupQuery(cmd string) (string, error) {
-	i := strings.Index(cmd, nodeLookupQueryWord)
+func parseLookupQuery(cmd string) (string, error) {
+	i := strings.Index(cmd, lookupQueryWord)
 	if i < 0 {
 		return "", fmt.Errorf("unrecognized command %q", cmd)
 	}
-	return strings.TrimSpace(cmd[i+len(nodeLookupQueryWord):]), nil
+	return strings.TrimSpace(cmd[i+len(lookupQueryWord):]), nil
 }
 
-// parseNodeScanQuery looks for "blah query blah offset 200 blah limit 10 whatever"
+// parseScanQuery looks for "blah query blah offset 200 blah limit 10 whatever"
 // and returns the offset and limit as integers, else error.
-func parseNodeScanQuery(cmd string) (offset, limit int, err error) {
-	i := strings.Index(cmd, nodeScanQueryWord)
+func parseScanQuery(cmd string) (offset, limit int, err error) {
+	i := strings.Index(cmd, scanQueryWord)
 	if i < 0 {
 		return 0, 0, fmt.Errorf("unrecognized command %q", cmd)
 	}
-	cmd = cmd[i+len(nodeScanQueryWord):]
+	cmd = cmd[i+len(scanQueryWord):]
 	args := strings.Split(strings.TrimSpace(cmd), " ")
 	offset, err = getIntArg(args, "offset")
 	if err != nil {

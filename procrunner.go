@@ -4,11 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/monopole/clirunner/internal/fltr"
 	"io"
 	"os/exec"
 	"sync"
 	"time"
+
+	"github.com/monopole/clirunner/internal/fltr"
 
 	"github.com/monopole/clirunner/cmdrs"
 	"github.com/monopole/clirunner/ifc"

@@ -5,15 +5,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/monopole/clirunner/internal/testcli/tstcli"
+
 	"github.com/monopole/clirunner/cmdrs"
 	. "github.com/monopole/clirunner/internal/fltr"
 	. "github.com/monopole/clirunner/internal/testing"
-	"github.com/monopole/clirunner/testcli/cli"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSentinelFilter_BeginRun(t *testing.T) {
-	cw := MakeSentinelFilter(cli.MakeOutSentinelCommander(), nil, ';')
+	cw := MakeSentinelFilter(tstcli.MakeOutSentinelCommander(), nil, ';')
 	assert.False(t, cw.IsRunning())
 	cmdr := &cmdrs.KondoCommander{Command: "kondo"}
 	var stdIn bytes.Buffer
@@ -25,7 +26,7 @@ func TestSentinelFilter_BeginRun(t *testing.T) {
 }
 
 func TestSentinelFilter_WatchAndWait_timeout(t *testing.T) {
-	sentinel := cli.MakeOutSentinelCommander()
+	sentinel := tstcli.MakeOutSentinelCommander()
 	cmdr := cmdrs.NewHoardingCommander("hoard")
 	cw := MakeSentinelFilter(sentinel, nil, ';')
 	var stdIn bytes.Buffer
@@ -43,7 +44,7 @@ func TestSentinelFilter_WatchAndWait_timeout(t *testing.T) {
 }
 
 func TestSentinelFilter_WatchAndWait_noTimeout(t *testing.T) {
-	sentinel := cli.MakeOutSentinelCommander()
+	sentinel := tstcli.MakeOutSentinelCommander()
 	cmdr := cmdrs.NewHoardingCommander("hoard")
 	cw := MakeSentinelFilter(sentinel, nil, ';')
 	var stdIn bytes.Buffer
@@ -72,8 +73,8 @@ from command n
 }
 
 func TestSentinelFilter_WatchAndWait_bothOutAndError(t *testing.T) {
-	outSentinel := cli.MakeOutSentinelCommander()
-	errSentinel := cli.MakeErrSentinelCommander()
+	outSentinel := tstcli.MakeOutSentinelCommander()
+	errSentinel := tstcli.MakeErrSentinelCommander()
 	cmdr := cmdrs.NewHoardingCommander("hoard")
 	cw := MakeSentinelFilter(outSentinel, errSentinel, ';')
 	var stdIn bytes.Buffer
@@ -113,8 +114,8 @@ oh no some error from command n!
 }
 
 func TestSentinelFilter_WatchAndWait_diesBeforeSentinel(t *testing.T) {
-	outSentinel := cli.MakeOutSentinelCommander()
-	errSentinel := cli.MakeErrSentinelCommander()
+	outSentinel := tstcli.MakeOutSentinelCommander()
+	errSentinel := tstcli.MakeErrSentinelCommander()
 	cmdr := cmdrs.NewHoardingCommander("hoard")
 	cw := MakeSentinelFilter(outSentinel, errSentinel, ';')
 	var stdIn bytes.Buffer

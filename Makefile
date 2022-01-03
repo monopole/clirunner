@@ -54,3 +54,8 @@ clean:
 	rm -f $(GOBIN)/misspell
 	rm -f $(GOBIN)/stringer
 	rm -f $(GOBIN)/testcli
+
+.PHONY: clean
+coverage:
+	go test -v -cover -coverprofile=/tmp/coverage.out
+	go tool cover -html=/tmp/coverage.out

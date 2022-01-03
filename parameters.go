@@ -2,6 +2,7 @@ package clirunner
 
 import (
 	"fmt"
+
 	"github.com/monopole/clirunner/ifc"
 )
 
@@ -48,7 +49,7 @@ type Parameters struct {
 	//   Look for: "v1.2.3"
 	//
 	// The sentinel can be custom, but it's simplest to use an instance
-	// of cli.SimpleSentinelCommander, which can accommodate prompt detection.
+	// of SimpleSentinelCommander, which can accommodate prompt detection.
 	OutSentinel ifc.Commander
 
 	// ErrSentinel is a command that intentionally triggers output on stderr,

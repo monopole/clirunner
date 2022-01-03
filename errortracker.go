@@ -2,7 +2,8 @@ package clirunner
 
 import "sync"
 
-// errorTracker accumulates errors for debugging and reporting.
+// errorTracker accumulates errors for debugging and reporting
+// from multiple threads.
 type errorTracker struct {
 	m    sync.Mutex
 	errs []error

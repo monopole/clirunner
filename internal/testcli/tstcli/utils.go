@@ -1,9 +1,10 @@
-package cli
+package tstcli
 
 import (
+	"time"
+
 	"github.com/monopole/clirunner/cmdrs"
 	"github.com/monopole/clirunner/ifc"
-	"time"
 )
 
 // MakeOutSentinelCommander returns a sentinel commander that has testcli

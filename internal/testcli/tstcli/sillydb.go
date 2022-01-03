@@ -1,4 +1,4 @@
-package cli
+package tstcli
 
 import (
 	"fmt"
@@ -20,7 +20,6 @@ type SillyDb struct {
 	types        []string
 	names        []string
 	revisions    []string
-	actualLines  []string
 }
 
 // NewSillyDb returns a new instance.
@@ -32,7 +31,6 @@ func NewSillyDb(numRowsInDb, rowToErrorOn int) *SillyDb {
 		types:        strings.Split(strings.TrimSpace(fruits), "\n"),
 		names:        strings.Split(strings.TrimSpace(asteroids), "\n"),
 		revisions:    strings.Split(strings.TrimSpace(versions), "\n"),
-		actualLines:  strings.Split(strings.TrimSpace(actualLines), "\n"),
 	}
 }
 
@@ -47,23 +45,18 @@ func (db *SillyDb) DoLookupQuery(id string) error {
 		return fmt.Errorf(requestedErrFmt, db.rowToErrorOn)
 	}
 	if idAsInt > db.numRowsInDb {
-		fmt.Fprintln(os.Stderr, "Error: #1900068: print business object failed")
+		fmt.Fprintln(os.Stderr, "Error: #666: lookup failed")
 		fmt.Fprintln(os.Stderr, "Error: Expected name")
 		return nil
 	}
-	fmt.Print(`BusinessObject CATMpgReference f068ec82_6d28_5a3d11ac_1555eaa0 ---
-  lattice vplm
-  policy VPLM_Replication
-  description 
+	fmt.Print(`Findleblaster hizod f068ec82_6d28_5a3d11ac_1555eaa0 ---
+  golattice vplm policy VPLM_Replication
   created 12/22/2017 2:11:12 PM
   modified 12/22/2017 2:11:45 PM
-  owner xpg
-  organization Engineering
+  society poet
   project ManufacturingEngineeringCS
-  unlocked
+  randomly unlocked
   locking not enforced
-  PLMEntity.V_CustoDiscipline 
-  PLMEntity.V_sec_level 0
 `)
 	return nil
 }
@@ -100,11 +93,11 @@ func (db *SillyDb) RowToErrorOn() int {
 func (db *SillyDb) generateRow(pid int) string {
 	var b strings.Builder
 	b.WriteString(db.types[db.rnd.Intn(len(db.types))])
-	b.WriteString(delimiter)
+	b.WriteString(rowDataDelimiter)
 	b.WriteString(db.names[db.rnd.Intn(len(db.names))])
-	b.WriteString(delimiter)
+	b.WriteString(rowDataDelimiter)
 	b.WriteString(db.revisions[db.rnd.Intn(len(db.revisions))])
-	b.WriteString(delimiter)
+	b.WriteString(rowDataDelimiter)
 	b.WriteString(fmt.Sprintf("%032d", pid))
 	b.WriteString("\n")
 	return b.String()
@@ -200,23 +193,4 @@ Hermione
 Aletheia
 Palma
 Lachesis
-`
-
-// Actual output of mql (matrix query language)
-//    temp query bus * * * \
-//       where 'type!=CATMpgRepresentation and type!=CATMpgReference' \
-//       size 128000 limit 10 select physicalid dump _|_
-// The _|_ is delimiter provided to mql.
-//goland:noinspection ALL
-const actualLines = `
-VPLMDataMigration_|_NewSRPersistency_|_---_|_56813D2B000011E4583C8EFF00007F2B
-VPLMDataMigration_|_CATIASystemDisciplines_|_---_|_56813D2B000011E4583C92B7000125FB
-VPLM Project Template_|_StandardTeam_|_-_|_56813D2B000011E4583C9254000110FE
-VPLM Project Template_|_PublicDesignTeam_|_-_|_56813D2B000011E4583C925400011104
-VPLM Project Template_|_ProtectedDesignTeam_|_-_|_56813D2B000011E4583C92540001110A
-VPLM Project Template_|_PrivateDesignTeam_|_-_|_56813D2B000011E4583C92540001110E
-VPLMDataMigration_|_MigrateCompany_|_---_|_56813D2B000011E4583C92B700012603
-VPLMDataMigration_|_MajorMinor-Common_|_---_|_56813D2B000011E4583C9371000147F6
-VPLMDataMigration_|_MigrateLastMinorVersion_|_---_|_56813D2B000011E4583C92D600012C64
-ENOWSP_WorkpaceRootRef_|_Enterprise's Workspaces_|_---_|_56813D2B000011E4583C935C000141F0
 `

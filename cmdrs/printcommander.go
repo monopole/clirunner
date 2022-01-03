@@ -2,8 +2,9 @@ package cmdrs
 
 import (
 	"fmt"
-	"github.com/monopole/clirunner/ifc"
 	"io"
+
+	"github.com/monopole/clirunner/ifc"
 )
 
 var _ ifc.Commander = &PrintingCommander{}

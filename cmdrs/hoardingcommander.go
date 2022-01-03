@@ -2,6 +2,7 @@ package cmdrs
 
 import (
 	"bytes"
+
 	"github.com/monopole/clirunner/ifc"
 )
 

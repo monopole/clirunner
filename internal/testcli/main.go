@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/monopole/clirunner/testcli/cli"
+	cli2 "github.com/monopole/clirunner/internal/testcli/tstcli"
 )
 
 //go:embed README.md
@@ -24,35 +24,35 @@ func main() {
 	var args argSack
 	flag.IntVar(
 		&args.rowToErrorOn,
-		cli.FlagRowToErrorOn, 0,
+		cli2.FlagRowToErrorOn, 0,
 		"Error if this row number is in the results.")
 	flag.IntVar(
 		&args.numRowsInDb,
-		cli.FlagNumRowsInDb, 50,
+		cli2.FlagNumRowsInDb, 50,
 		"Maximum number of rows in the fake db.")
 	flag.BoolVar(
 		&args.disablePrompt,
-		cli.FlagDisablePrompt, false,
+		cli2.FlagDisablePrompt, false,
 		"Disable the prompt.")
 	flag.BoolVar(
 		&args.exitOnError,
-		cli.FlagExitOnErr, false,
+		cli2.FlagExitOnErr, false,
 		"Exit on error, else continue accepting commands.")
 	flag.Parse()
 	if len(flag.Args()) > 0 {
-		if flag.Args()[0] != cli.CmdHelp {
+		if flag.Args()[0] != cli2.CmdHelp {
 			fmt.Fprintln(os.Stderr, "unrecognized args: ", flag.Args())
 		}
 		fmt.Fprintln(os.Stderr)
 		fmt.Fprint(os.Stderr, readMeMd)
 		fmt.Fprintln(os.Stderr)
-		fmt.Fprintf(os.Stderr, "Commands: %v\n", cli.AllCommands)
+		fmt.Fprintf(os.Stderr, "Commands: %v\n", cli2.AllCommands)
 		fmt.Fprintf(os.Stderr, "Flags:\n")
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
-	shell := cli.NewShell(
-		cli.NewSillyDb(args.numRowsInDb, args.rowToErrorOn),
+	shell := cli2.NewShell(
+		cli2.NewSillyDb(args.numRowsInDb, args.rowToErrorOn),
 		args.disablePrompt,
 		args.exitOnError,
 		readMeMd,

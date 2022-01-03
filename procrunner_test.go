@@ -4,10 +4,11 @@ import (
 	"testing"
 	"time"
 
+	cli2 "github.com/monopole/clirunner/internal/testcli/tstcli"
+
 	. "github.com/monopole/clirunner"
 	. "github.com/monopole/clirunner/cmdrs"
 	. "github.com/monopole/clirunner/internal/testing"
-	"github.com/monopole/clirunner/testcli/cli"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,7 +27,7 @@ func assertNoErr(err error) {
 func TestNewRunner(t *testing.T) {
 	r, err := NewProcRunner(&Parameters{
 		Path:        nonexistentCommandPath,
-		OutSentinel: cli.MakeOutSentinelCommander(),
+		OutSentinel: cli2.MakeOutSentinelCommander(),
 	})
 	assert.NoError(t, err)
 	assert.NotNil(t, r)
@@ -35,10 +36,10 @@ func TestNewRunner(t *testing.T) {
 func TestRunner_Run_BadPath(t *testing.T) {
 	r, err := NewProcRunner(&Parameters{
 		Path:        nonexistentCommandPath,
-		OutSentinel: cli.MakeOutSentinelCommander(),
+		OutSentinel: cli2.MakeOutSentinelCommander(),
 	})
 	assert.NoError(t, err)
-	err = r.RunIt(NewHoardingCommander(cli.CmdQuery+" limit 1"), testingTimeout)
+	err = r.RunIt(NewHoardingCommander(cli2.CmdQuery+" limit 1"), testingTimeout)
 	if !assert.Error(t, err) {
 		t.Fatal("expecting an error")
 	}
@@ -48,7 +49,6 @@ func TestRunner_Run_BadPath(t *testing.T) {
 func TestRunner_Run_NoSentinelCommander(t *testing.T) {
 	_, err := NewProcRunner(&Parameters{
 		Path: nonexistentCommandPath,
-		//		OutSentinel: cli.MakeOutSentinelCommander(),
 	})
 	if !assert.Error(t, err) {
 		t.Fatal("expecting an error")
@@ -58,8 +58,8 @@ func TestRunner_Run_NoSentinelCommander(t *testing.T) {
 
 func TestRunner_Run_ForgotTheCommander(t *testing.T) {
 	runner, err := NewProcRunner(&Parameters{
-		Path:        cli.TestCliPath,
-		OutSentinel: cli.MakeOutSentinelCommander(),
+		Path:        cli2.TestCliPath,
+		OutSentinel: cli2.MakeOutSentinelCommander(),
 	})
 	assert.NoError(t, err)
 	err = runner.RunIt(nil, testingTimeout)
@@ -73,13 +73,13 @@ func TestRunner_Run_ForgotTheCommander(t *testing.T) {
 // Using a prompt-only sentinel is not well tested.
 func TestRunner_Run_YouForgotToDisableThePrompt(t *testing.T) {
 	runner, err := NewProcRunner(&Parameters{
-		Path: cli.TestCliPath,
+		Path: cli2.TestCliPath,
 		// intentionally leave prompt enabled.
-		ExitCommand: cli.CmdQuit,
-		OutSentinel: cli.MakeOutSentinelCommander(),
+		ExitCommand: cli2.CmdQuit,
+		OutSentinel: cli2.MakeOutSentinelCommander(),
 	})
 	assert.NoError(t, err)
-	commander := NewHoardingCommander(cli.CmdQuery + " limit 1")
+	commander := NewHoardingCommander(cli2.CmdQuery + " limit 1")
 	assert.NoError(t, runner.RunIt(commander, testingTimeout))
 	assert.Equal(t, `
 hey<1>Cempedak_|_Bamberga_|_4_|_00000000000000000000000000000001
@@ -89,13 +89,13 @@ hey<1>Cempedak_|_Bamberga_|_4_|_00000000000000000000000000000001
 
 func TestRunner_Run_HappyQuery(t *testing.T) {
 	runner, err := NewProcRunner(&Parameters{
-		Path:        cli.TestCliPath,
-		Args:        []string{"--" + cli.FlagDisablePrompt},
-		ExitCommand: cli.CmdQuit,
-		OutSentinel: cli.MakeOutSentinelCommander(),
+		Path:        cli2.TestCliPath,
+		Args:        []string{"--" + cli2.FlagDisablePrompt},
+		ExitCommand: cli2.CmdQuit,
+		OutSentinel: cli2.MakeOutSentinelCommander(),
 	})
 	assert.NoError(t, err)
-	commander := NewHoardingCommander(cli.CmdQuery + " limit 5")
+	commander := NewHoardingCommander(cli2.CmdQuery + " limit 5")
 	assert.NoError(t, runner.RunIt(commander, testingTimeout))
 	assert.Equal(t, `
 Cempedak_|_Bamberga_|_4_|_00000000000000000000000000000001
@@ -109,14 +109,14 @@ Banana_|_Egeria_|_5_|_00000000000000000000000000000005
 
 func TestRunner_Run_SentinelTimeoutOnLongRunningCommand(t *testing.T) {
 	runner, err := NewProcRunner(&Parameters{
-		Path:        cli.TestCliPath,
-		Args:        []string{"--" + cli.FlagDisablePrompt},
-		ExitCommand: cli.CmdQuit,
-		OutSentinel: cli.MakeOutSentinelCommander(),
+		Path:        cli2.TestCliPath,
+		Args:        []string{"--" + cli2.FlagDisablePrompt},
+		ExitCommand: cli2.CmdQuit,
+		OutSentinel: cli2.MakeOutSentinelCommander(),
 	})
 	assert.NoError(t, err)
 	// sleep exceeds SentinelDuration
-	err = runner.RunIt(cli.MakeSleepCommander(4*time.Second), 1*time.Second)
+	err = runner.RunIt(cli2.MakeSleepCommander(4*time.Second), 1*time.Second)
 	if !assert.Error(t, err) {
 		t.Fatal("expecting an error")
 	}
@@ -126,31 +126,31 @@ func TestRunner_Run_SentinelTimeoutOnLongRunningCommand(t *testing.T) {
 
 func TestRunner_NoSentinelTimeoutOnShortRunningCommand(t *testing.T) {
 	runner, err := NewProcRunner(&Parameters{
-		Path:        cli.TestCliPath,
-		Args:        []string{"--" + cli.FlagDisablePrompt},
-		ExitCommand: cli.CmdQuit,
-		OutSentinel: cli.MakeOutSentinelCommander(),
+		Path:        cli2.TestCliPath,
+		Args:        []string{"--" + cli2.FlagDisablePrompt},
+		ExitCommand: cli2.CmdQuit,
+		OutSentinel: cli2.MakeOutSentinelCommander(),
 	})
 	assert.NoError(t, err)
 	assert.NoError(
-		t, runner.RunIt(cli.MakeSleepCommander(1*time.Second), 4*time.Second))
+		t, runner.RunIt(cli2.MakeSleepCommander(1*time.Second), 4*time.Second))
 	assert.NoError(t, runner.Close())
 }
 
 // This is the happy path.
 func TestRunner_ErrorInCommandNoErrorOnExit(t *testing.T) {
 	runner, err := NewProcRunner(&Parameters{
-		Path: cli.TestCliPath,
+		Path: cli2.TestCliPath,
 		Args: []string{
-			"--" + cli.FlagDisablePrompt,
-			"--" + cli.FlagRowToErrorOn, "4",
+			"--" + cli2.FlagDisablePrompt,
+			"--" + cli2.FlagRowToErrorOn, "4",
 		},
-		ExitCommand: cli.CmdQuit,
-		OutSentinel: cli.MakeOutSentinelCommander(),
-		ErrSentinel: cli.MakeErrSentinelCommander(),
+		ExitCommand: cli2.CmdQuit,
+		OutSentinel: cli2.MakeOutSentinelCommander(),
+		ErrSentinel: cli2.MakeErrSentinelCommander(),
 	})
 	assert.NoError(t, err)
-	commander := NewHoardingCommander(cli.CmdQuery + " limit 3")
+	commander := NewHoardingCommander(cli2.CmdQuery + " limit 3")
 	assert.NoError(t, runner.RunIt(commander, testingTimeout))
 	assert.Equal(t, `
 Cempedak_|_Bamberga_|_4_|_00000000000000000000000000000001
@@ -160,7 +160,7 @@ African cucumber_|_Ursula_|_6_|_00000000000000000000000000000003
 
 	// Query again, but ask for a row beyond the row that triggers a DB error.
 	commander.Reset()
-	commander.Command = cli.CmdQuery + " limit 5"
+	commander.Command = cli2.CmdQuery + " limit 5"
 	assert.NoError(t, runner.RunIt(commander, testingTimeout))
 	assert.True(t, commander.Success())
 
@@ -176,19 +176,19 @@ error! touching row 4 triggers this error
 
 func TestRunner_ErrorInCommandOutputForcingExit(t *testing.T) {
 	runner, err := NewProcRunner(&Parameters{
-		Path: cli.TestCliPath,
+		Path: cli2.TestCliPath,
 		Args: []string{
-			"--" + cli.FlagDisablePrompt,
+			"--" + cli2.FlagDisablePrompt,
 			// Using this means any error will cause process exit.
 			// So we cannot use an errSentinel, as it by definition causes an error.
-			"--" + cli.FlagExitOnErr,
-			"--" + cli.FlagRowToErrorOn, "4",
+			"--" + cli2.FlagExitOnErr,
+			"--" + cli2.FlagRowToErrorOn, "4",
 		},
-		ExitCommand: cli.CmdQuit,
-		OutSentinel: cli.MakeOutSentinelCommander(),
+		ExitCommand: cli2.CmdQuit,
+		OutSentinel: cli2.MakeOutSentinelCommander(),
 	})
 	assert.NoError(t, err)
-	commander := NewHoardingCommander(cli.CmdQuery + " limit 3")
+	commander := NewHoardingCommander(cli2.CmdQuery + " limit 3")
 	assert.NoError(t, runner.RunIt(commander, testingTimeout))
 	assert.Equal(t, `
 Cempedak_|_Bamberga_|_4_|_00000000000000000000000000000001
@@ -200,7 +200,7 @@ African cucumber_|_Ursula_|_6_|_00000000000000000000000000000003
 	// Query again, but ask for a row beyond the row that triggers a DB error.
 	// Since FlagExitOnErr is on, this causes the CLI to die.
 	commander.Reset()
-	commander.Command = cli.CmdQuery + " limit 5"
+	commander.Command = cli2.CmdQuery + " limit 5"
 	err = runner.RunIt(commander, testingTimeout)
 	if !assert.Error(t, err) {
 		t.Fatal("expecting an error")
@@ -226,20 +226,20 @@ error! touching row 4 triggers this error
 
 func TestRunner_ErrorPrefix(t *testing.T) {
 	runner, err := NewProcRunner(&Parameters{
-		Path: cli.TestCliPath,
+		Path: cli2.TestCliPath,
 		Args: []string{
-			"--" + cli.FlagDisablePrompt,
-			"--" + cli.FlagExitOnErr,
-			"--" + cli.FlagRowToErrorOn, "4",
+			"--" + cli2.FlagDisablePrompt,
+			"--" + cli2.FlagExitOnErr,
+			"--" + cli2.FlagRowToErrorOn, "4",
 		},
 		ErrPrefix:   testingErrPrefix,
-		OutSentinel: cli.MakeOutSentinelCommander(),
+		OutSentinel: cli2.MakeOutSentinelCommander(),
 	})
 	assert.NoError(t, err)
 
 	// Ask for a row beyond the row that triggers a DB error.
 	// Since FlagExitOnErr is on, this causes the CLI to die.
-	commander := NewHoardingCommander(cli.CmdQuery + " limit 5")
+	commander := NewHoardingCommander(cli2.CmdQuery + " limit 5")
 	err = runner.RunIt(commander, testingTimeout)
 	if !assert.Error(t, err) {
 		t.Fatal("expecting an error")

@@ -1,20 +1,21 @@
 package clirunner_test
 
 import (
+	"os"
+
 	. "github.com/monopole/clirunner"
 	"github.com/monopole/clirunner/cmdrs"
-	"github.com/monopole/clirunner/testcli/cli"
-	"os"
+	cli2 "github.com/monopole/clirunner/internal/testcli/tstcli"
 )
 
 func ExampleProcRunner_basicRun() {
 	runner, _ := NewProcRunner(&Parameters{
-		Path: cli.TestCliPath,
+		Path: cli2.TestCliPath,
 		Args: []string{
-			"--" + cli.FlagDisablePrompt,
+			"--" + cli2.FlagDisablePrompt,
 		},
-		ExitCommand: cli.CmdQuit,
-		OutSentinel: cli.MakeOutSentinelCommander(),
+		ExitCommand: cli2.CmdQuit,
+		OutSentinel: cli2.MakeOutSentinelCommander(),
 	})
 	commander := cmdrs.NewPrintingCommander("query limit 3", os.Stdout)
 	assertNoErr(runner.RunIt(commander, testingTimeout))
@@ -27,13 +28,13 @@ func ExampleProcRunner_basicRun() {
 
 func ExampleProcRunner_subprocessError() {
 	runner, _ := NewProcRunner(&Parameters{
-		Path: cli.TestCliPath,
+		Path: cli2.TestCliPath,
 		Args: []string{
-			"--" + cli.FlagDisablePrompt,
-			"--" + cli.FlagRowToErrorOn, "4",
+			"--" + cli2.FlagDisablePrompt,
+			"--" + cli2.FlagRowToErrorOn, "4",
 		},
-		ExitCommand: cli.CmdQuit,
-		OutSentinel: cli.MakeOutSentinelCommander(),
+		ExitCommand: cli2.CmdQuit,
+		OutSentinel: cli2.MakeOutSentinelCommander(),
 	})
 	commander := cmdrs.NewPrintingCommander("query limit 3", os.Stdout)
 	// Yields three lines.

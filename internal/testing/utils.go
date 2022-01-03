@@ -1,10 +1,11 @@
 package testing
 
 import (
-	"github.com/stretchr/testify/assert"
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // AssertEqualAnyOrder returns true if the two strings, viewed as lines,

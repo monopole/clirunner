@@ -8,7 +8,7 @@ package hack
 import (
 	_ "github.com/client9/misspell/cmd/misspell"
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
-	_ "github.com/monopole/clirunner/testcli"
+	_ "github.com/monopole/clirunner/internal/testcli"
 	_ "golang.org/x/lint/golint"
 	_ "golang.org/x/tools/cmd/goimports"
 	_ "golang.org/x/tools/cmd/stringer"

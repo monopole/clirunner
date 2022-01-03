@@ -3,10 +3,11 @@ package fltr
 import (
 	"bytes"
 	"fmt"
-	"github.com/monopole/clirunner/ifc"
 	"io"
 	"sync"
 	"time"
+
+	"github.com/monopole/clirunner/ifc"
 )
 
 const (
