@@ -2,7 +2,7 @@
 //
 // Use one instance of ProcRunner to manage the CLI (kubectl, mysql, etc.),
 // and for each different command you want to run you need an implementation
-// of the Commander interface.
+// of ifc.Commander.
 //
 // The Commander implementation knows both the command string and how to parse
 // the command's output from the CLI.  ProcRunner takes care of all the wiring
