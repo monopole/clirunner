@@ -2,8 +2,6 @@ package cmdrs
 
 import (
 	"bytes"
-
-	"github.com/monopole/clirunner/ifc"
 )
 
 // SimpleSentinelCommander is a Commander that asserts Success if it sees
@@ -16,8 +14,6 @@ type SimpleSentinelCommander struct {
 	// Handy for debugging.
 	match string
 }
-
-var _ ifc.Commander = &SimpleSentinelCommander{}
 
 func (c *SimpleSentinelCommander) String() string { return c.Command }
 

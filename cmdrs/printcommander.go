@@ -3,11 +3,7 @@ package cmdrs
 import (
 	"fmt"
 	"io"
-
-	"github.com/monopole/clirunner/ifc"
 )
-
-var _ ifc.Commander = &PrintingCommander{}
 
 // PrintingCommander echos everything to stdout.
 // Only useful for examples, tests, debugging, etc.

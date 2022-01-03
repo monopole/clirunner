@@ -1,34 +1,32 @@
-package fltr_test
+package clirunner
 
 import (
 	"bytes"
 	"testing"
 	"time"
 
-	"github.com/monopole/clirunner/internal/testcli/tstcli"
-
 	"github.com/monopole/clirunner/cmdrs"
-	. "github.com/monopole/clirunner/internal/fltr"
+	"github.com/monopole/clirunner/internal/testcli/tstcli"
 	. "github.com/monopole/clirunner/internal/testing"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSentinelFilter_BeginRun(t *testing.T) {
-	cw := MakeSentinelFilter(tstcli.MakeOutSentinelCommander(), nil, ';')
-	assert.False(t, cw.IsRunning())
+	cw := makeSentinelFilter(tstcli.MakeOutSentinelCommander(), nil, ';')
+	assert.False(t, cw.isRunning())
 	cmdr := &cmdrs.KondoCommander{Command: "kondo"}
 	var stdIn bytes.Buffer
 	c, err := cw.BeginRun(cmdr, &stdIn)
 	assert.NoError(t, err)
 	assert.Equal(t, "kondo;\n", c)
 	assert.Equal(t, "kondo;\n", stdIn.String())
-	assert.True(t, cw.IsRunning())
+	assert.True(t, cw.isRunning())
 }
 
 func TestSentinelFilter_WatchAndWait_timeout(t *testing.T) {
 	sentinel := tstcli.MakeOutSentinelCommander()
 	cmdr := cmdrs.NewHoardingCommander("hoard")
-	cw := MakeSentinelFilter(sentinel, nil, ';')
+	cw := makeSentinelFilter(sentinel, nil, ';')
 	var stdIn bytes.Buffer
 	_, err := cw.BeginRun(cmdr, &stdIn)
 	assert.NoError(t, err)
@@ -46,7 +44,7 @@ func TestSentinelFilter_WatchAndWait_timeout(t *testing.T) {
 func TestSentinelFilter_WatchAndWait_noTimeout(t *testing.T) {
 	sentinel := tstcli.MakeOutSentinelCommander()
 	cmdr := cmdrs.NewHoardingCommander("hoard")
-	cw := MakeSentinelFilter(sentinel, nil, ';')
+	cw := makeSentinelFilter(sentinel, nil, ';')
 	var stdIn bytes.Buffer
 	_, err := cw.BeginRun(cmdr, &stdIn)
 	assert.NoError(t, err)
@@ -76,7 +74,7 @@ func TestSentinelFilter_WatchAndWait_bothOutAndError(t *testing.T) {
 	outSentinel := tstcli.MakeOutSentinelCommander()
 	errSentinel := tstcli.MakeErrSentinelCommander()
 	cmdr := cmdrs.NewHoardingCommander("hoard")
-	cw := MakeSentinelFilter(outSentinel, errSentinel, ';')
+	cw := makeSentinelFilter(outSentinel, errSentinel, ';')
 	var stdIn bytes.Buffer
 	_, err := cw.BeginRun(cmdr, &stdIn)
 	assert.NoError(t, err)
@@ -117,7 +115,7 @@ func TestSentinelFilter_WatchAndWait_diesBeforeSentinel(t *testing.T) {
 	outSentinel := tstcli.MakeOutSentinelCommander()
 	errSentinel := tstcli.MakeErrSentinelCommander()
 	cmdr := cmdrs.NewHoardingCommander("hoard")
-	cw := MakeSentinelFilter(outSentinel, errSentinel, ';')
+	cw := makeSentinelFilter(outSentinel, errSentinel, ';')
 	var stdIn bytes.Buffer
 	_, err := cw.BeginRun(cmdr, &stdIn)
 	assert.NoError(t, err)
@@ -197,7 +195,7 @@ func TestAssureCmdLineTermination(t *testing.T) {
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
 			assert.Equal(
-				t, tc.expected, AssureCmdLineTermination([]byte(tc.line), tc.term))
+				t, tc.expected, assureCmdLineTermination([]byte(tc.line), tc.term))
 		})
 	}
 }

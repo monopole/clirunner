@@ -1,9 +1,5 @@
 package cmdrs
 
-import (
-	"github.com/monopole/clirunner/ifc"
-)
-
 // KondoCommander quietly discards everything sent to Write
 // and always reports Success true.
 // Use this when you just want to run a command and don't care
@@ -11,8 +7,6 @@ import (
 type KondoCommander struct {
 	Command string
 }
-
-var _ ifc.Commander = &KondoCommander{}
 
 // Write accepts input to discard.
 func (c *KondoCommander) Write(_ []byte) (int, error) { return 0, nil }

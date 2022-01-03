@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/monopole/clirunner/cmdrs"
-	"github.com/monopole/clirunner/ifc"
 )
 
 // MakeOutSentinelCommander returns a sentinel commander that has testcli
@@ -30,6 +29,6 @@ func MakeErrSentinelCommander() *cmdrs.SimpleSentinelCommander {
 
 // MakeSleepCommander Returns a command that makes the testcli sleep for the
 // given duration. Used in testing timeouts.
-func MakeSleepCommander(d time.Duration) ifc.Commander {
+func MakeSleepCommander(d time.Duration) *cmdrs.HoardingCommander {
 	return cmdrs.NewHoardingCommander(CmdSleep + " " + d.String())
 }

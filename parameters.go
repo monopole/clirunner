@@ -2,8 +2,6 @@ package clirunner
 
 import (
 	"fmt"
-
-	"github.com/monopole/clirunner/ifc"
 )
 
 // Parameters is a bag of parameters for ProcRunner.
@@ -50,7 +48,7 @@ type Parameters struct {
 	//
 	// The sentinel can be custom, but it's simplest to use an instance
 	// of SimpleSentinelCommander, which can accommodate prompt detection.
-	OutSentinel ifc.Commander
+	OutSentinel Commander
 
 	// ErrSentinel is a command that intentionally triggers output on stderr,
 	// e.g. a misspelled command, a command with a non-existent flag - something
@@ -59,7 +57,7 @@ type Parameters struct {
 	// ErrSentinel is used to be sure that any errors generated in the course of
 	// running command N are swept up and accounted for before looking for errors
 	// from command N+1.
-	ErrSentinel ifc.Commander
+	ErrSentinel Commander
 
 	// CommandTerminator, if not 0, is appended to the end of every command.
 	// This is merely a convenience for CLI's like mysql that want such things.

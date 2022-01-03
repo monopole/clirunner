@@ -9,10 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/monopole/clirunner/internal/fltr"
-
 	"github.com/monopole/clirunner/cmdrs"
-	"github.com/monopole/clirunner/ifc"
 )
 
 // ProcRunner manages an interactive command line interpreter (CLI) subprocess.
@@ -53,16 +50,16 @@ import (
 // returns an error.
 //
 type ProcRunner struct {
-	params      *Parameters          // specifics about a particular CLI
-	cmd         *exec.Cmd            // the CLI subprocess
-	stdIn       io.WriteCloser       // the CLI's input stream
-	outScanner  *bufio.Scanner       // scans the CLI's standard output
-	errScanner  *bufio.Scanner       // scans the CLI's error output
-	chOut       chan []byte          // lines from stdOut
-	chErr       chan []byte          // lines from stdErr
-	infraErrors *errorTracker        // multiple threads can generate errors
-	mutexState  sync.Mutex           // protect the ProcRunner state
-	filter      *fltr.SentinelFilter // runs commands and watches for sentinels
+	params      *Parameters     // specifics about a particular CLI
+	cmd         *exec.Cmd       // the CLI subprocess
+	stdIn       io.WriteCloser  // the CLI's input stream
+	outScanner  *bufio.Scanner  // scans the CLI's standard output
+	errScanner  *bufio.Scanner  // scans the CLI's error output
+	chOut       chan []byte     // lines from stdOut
+	chErr       chan []byte     // lines from stdErr
+	infraErrors *errorTracker   // multiple threads can generate errors
+	mutexState  sync.Mutex      // protect the ProcRunner state
+	filter      *sentinelFilter // runs commands and watches for sentinels
 }
 
 type runnerState int
@@ -99,7 +96,7 @@ func (pr *ProcRunner) getState() runnerState {
 	if pr.cmd == nil {
 		return stateUninitialized
 	}
-	if pr.filter.IsRunning() {
+	if pr.filter.isRunning() {
 		return stateRunning
 	}
 	return stateIdle
@@ -123,7 +120,7 @@ func NewProcRunner(params *Parameters) (*ProcRunner, error) {
 	}
 	return &ProcRunner{
 		params: params,
-		filter: fltr.MakeSentinelFilter(
+		filter: makeSentinelFilter(
 			params.OutSentinel, params.ErrSentinel, params.CommandTerminator),
 	}, nil
 }
@@ -151,7 +148,7 @@ func (pr *ProcRunner) RunIgnoringOutput(c string) error {
 //
 // If RunIt returns an error, then the ProcRunner should be abandoned.
 // There's no general way to interrupt and "fix" a subprocess.
-func (pr *ProcRunner) RunIt(cmdr ifc.Commander, d time.Duration) error {
+func (pr *ProcRunner) RunIt(cmdr Commander, d time.Duration) error {
 	// Don't defer the 'Unlock' call corresponding to this Lock.
 	// We must unlock well before exiting this function because we intend to run
 	// a potentially long-running command.
@@ -188,7 +185,7 @@ func (pr *ProcRunner) RunIt(cmdr ifc.Commander, d time.Duration) error {
 			pr.enterStateError(err)
 			return err
 		}
-		// exit stateRunning, back to stateIdle.  This relies on SentinelFilter
+		// exit stateRunning, back to stateIdle.  This relies on sentinelFilter
 		// working as expected.
 		return nil
 	default:

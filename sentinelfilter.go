@@ -1,4 +1,4 @@
-package fltr
+package clirunner
 
 import (
 	"bytes"
@@ -6,38 +6,36 @@ import (
 	"io"
 	"sync"
 	"time"
-
-	"github.com/monopole/clirunner/ifc"
 )
 
 const (
 	// defaultSentinelDuration is short for a human, but long enough for simple,
 	// quick commands (the kind one wants as a sentinel) to finish.
 	defaultSentinelDuration = 3 * time.Second
-	// LineFeed makes it easier to find places where a linefeed is used.
-	LineFeed = '\n'
+	// lineFeed makes it easier to find places where a linefeed is used.
+	lineFeed = '\n'
 )
 
-// SentinelFilter is used by ProcRunner to orchestrate command lifetimes.
+// sentinelFilter is used by ProcRunner to orchestrate command lifetimes.
 // It allows a command to be issued to some stdIn writer, assuring that the
 // command line is properly terminated.  After issuing the command, the
-// SentinelFilter optionally follows up by issuing zero, one or two sentinel
+// sentinelFilter optionally follows up by issuing zero, one or two sentinel
 // commands, and watching for predefined sentinel value output from these
 // commands to appear on stdOut and/or stdErr.  When these sentinel values are
 // seen, one knows that theCmdr must be done.
-type SentinelFilter struct {
-	stdIn       io.Writer     // presumably the stdIn of some process.
-	theCmdr     ifc.Commander // the command we're running
-	cmdrLock    sync.Mutex    // lock on theCmdr to coordinate writing
-	outSentinel ifc.Commander // for stdOut (required; command can be empty)
-	errSentinel ifc.Commander // for stdErr (optional but recommended)
-	terminator  byte          // command line terminator (a convenience)
-	running     bool          // true if a command is running.
+type sentinelFilter struct {
+	stdIn       io.Writer  // presumably the stdIn of some process.
+	theCmdr     Commander  // the command we're running
+	cmdrLock    sync.Mutex // lock on theCmdr to coordinate writing
+	outSentinel Commander  // for stdOut (required; command can be empty)
+	errSentinel Commander  // for stdErr (optional but recommended)
+	terminator  byte       // command line terminator (a convenience)
+	running     bool       // true if a command is running.
 }
 
-// MakeSentinelFilter returns an instance of SentinelFilter.
-func MakeSentinelFilter(
-	os ifc.Commander, es ifc.Commander, t byte) *SentinelFilter {
+// makeSentinelFilter returns an instance of sentinelFilter.
+func makeSentinelFilter(
+	os Commander, es Commander, t byte) *sentinelFilter {
 	if os == nil {
 		panic("must have an outSentinel")
 	}
@@ -45,7 +43,7 @@ func MakeSentinelFilter(
 		panic("the out and err sentinel commands must differ")
 		// The success criterion - the things being looked for - should also differ.
 	}
-	return &SentinelFilter{outSentinel: os, errSentinel: es, terminator: t}
+	return &sentinelFilter{outSentinel: os, errSentinel: es, terminator: t}
 }
 
 // BeginRun writes the command string to the given writer, presumably
@@ -53,17 +51,17 @@ func MakeSentinelFilter(
 // It assures the command string is properly terminated.
 // It returns the actual command sent (possibly with different termination),
 // and any writer error.
-func (cw *SentinelFilter) BeginRun(c ifc.Commander, w io.Writer) (string, error) {
+func (cw *sentinelFilter) BeginRun(c Commander, w io.Writer) (string, error) {
 	cw.stdIn = w
 	cw.theCmdr = c
 	return cw.issueCommand(c.String())
 }
 
-func (cw *SentinelFilter) issueCommand(c string) (string, error) {
+func (cw *sentinelFilter) issueCommand(c string) (string, error) {
 	if len(c) == 0 {
 		return "", nil
 	}
-	fullCmd := AssureCmdLineTermination([]byte(c), cw.terminator)
+	fullCmd := assureCmdLineTermination([]byte(c), cw.terminator)
 	n, err := io.WriteString(cw.stdIn, fullCmd)
 	if err != nil || n != len(fullCmd) {
 		err = fmt.Errorf(
@@ -75,7 +73,7 @@ func (cw *SentinelFilter) issueCommand(c string) (string, error) {
 	return fullCmd, err
 }
 
-func (cw *SentinelFilter) resetFilter() {
+func (cw *sentinelFilter) resetFilter() {
 	cw.running = false
 	cw.outSentinel.Reset()
 	if cw.errSentinel != nil {
@@ -83,9 +81,9 @@ func (cw *SentinelFilter) resetFilter() {
 	}
 }
 
-// IsRunning returns true if we've called BeginRun but not yet seen a sentinel
+// isRunning returns true if we've called BeginRun but not yet seen a sentinel
 // to indicate a completion.
-func (cw *SentinelFilter) IsRunning() bool {
+func (cw *sentinelFilter) isRunning() bool {
 	return cw.running
 }
 
@@ -106,12 +104,12 @@ func (cw *SentinelFilter) IsRunning() bool {
 // A big assumption here is that stdIn is connected to some process input, and
 // that chOut and chErr respectively represent the stdOut and stdErr of that
 // same process (as would be arranged by an instance of ProcRunner).
-func (cw *SentinelFilter) IssueSentinelsAndFilter(
+func (cw *sentinelFilter) IssueSentinelsAndFilter(
 	chOut <-chan []byte, // scan this for command output
 	chErr <-chan []byte, // scan this for command errors
 	d time.Duration, // time limit on finding the sentinel value
 ) (err error) {
-	if !cw.IsRunning() {
+	if !cw.isRunning() {
 		return fmt.Errorf("nothing is running")
 	}
 	defer cw.resetFilter()
@@ -143,7 +141,7 @@ func (cw *SentinelFilter) IssueSentinelsAndFilter(
 }
 
 // filterForSentinels returns after sentinel success on both stdOut and stdErr.
-func (cw *SentinelFilter) filterForSentinels(
+func (cw *sentinelFilter) filterForSentinels(
 	done chan<- error, chOut <-chan []byte, chErr <-chan []byte,
 ) {
 	defer close(done)
@@ -167,9 +165,9 @@ func (cw *SentinelFilter) filterForSentinels(
 	}
 }
 
-func (cw *SentinelFilter) filterForSentinel(
+func (cw *sentinelFilter) filterForSentinel(
 	title string, err *error,
-	wg *sync.WaitGroup, sentinel ifc.Commander, ch <-chan []byte) {
+	wg *sync.WaitGroup, sentinel Commander, ch <-chan []byte) {
 	defer wg.Done()
 	for {
 		line, stillOpen := <-ch
@@ -204,7 +202,7 @@ func (cw *SentinelFilter) filterForSentinel(
 	}
 }
 
-func (cw *SentinelFilter) passThru(
+func (cw *sentinelFilter) passThru(
 	title string, err *error, ch <-chan []byte) {
 	for {
 		line, stillOpen := <-ch
@@ -235,7 +233,7 @@ func panicIfNotActuallyALine(line []byte) {
 	}
 }
 
-func (cw *SentinelFilter) expirationError(d time.Duration) error {
+func (cw *sentinelFilter) expirationError(d time.Duration) error {
 	c := cw.theCmdr.String()
 	msg := fmt.Sprintf(
 		"in command %q, time %s expired before detection of ", c, d)
@@ -246,15 +244,15 @@ func (cw *SentinelFilter) expirationError(d time.Duration) error {
 		msg+"output from sentinel command %q", cw.outSentinel.String())
 }
 
-// AssureCmdLineTermination assures that the last characters of a command line
+// assureCmdLineTermination assures that the last characters of a command line
 // are correct.
-func AssureCmdLineTermination(c []byte, terminator byte) string {
-	if c[len(c)-1] == LineFeed {
+func assureCmdLineTermination(c []byte, terminator byte) string {
+	if c[len(c)-1] == lineFeed {
 		// Slice it off avoid confusion, replace momentarily.  Cap() unchanged.
 		c = c[:len(c)-1]
 	}
 	if terminator > 0 && c[len(c)-1] != terminator {
 		c = append(c, terminator)
 	}
-	return string(append(c, LineFeed))
+	return string(append(c, lineFeed))
 }

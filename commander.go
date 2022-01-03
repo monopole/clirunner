@@ -1,4 +1,4 @@
-package ifc
+package clirunner
 
 import (
 	"fmt"

@@ -2,8 +2,6 @@ package cmdrs
 
 import (
 	"bytes"
-
-	"github.com/monopole/clirunner/ifc"
 )
 
 // HoardingCommander keeps everything sent into Write.
@@ -12,8 +10,6 @@ type HoardingCommander struct {
 	data bytes.Buffer
 	KondoCommander
 }
-
-var _ ifc.Commander = &HoardingCommander{}
 
 // NewHoardingCommander returns a new instance of HoardingCommander.
 func NewHoardingCommander(c string) *HoardingCommander {
