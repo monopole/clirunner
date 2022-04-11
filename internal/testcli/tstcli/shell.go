@@ -16,6 +16,7 @@ const (
 	TestCliPath       = "testcli"
 	FlagDisablePrompt = "disable-prompt"
 	FlagExitOnErr     = "exit-on-error"
+	FlagFailOnStartup = "fail-on-startup"
 	FlagNumRowsInDb   = "num-rows-in-db"
 	FlagRowToErrorOn  = "row-to-error-on"
 )

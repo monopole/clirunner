@@ -5,11 +5,14 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
+	"os"
 	"os/exec"
 	"sync"
 	"time"
 
 	"github.com/monopole/clirunner/cmdrs"
+	"github.com/pkg/errors"
 )
 
 // ProcRunner manages an interactive command line interpreter (CLI) subprocess.
@@ -63,6 +66,19 @@ type ProcRunner struct {
 }
 
 type runnerState int
+
+type logSink struct{}
+
+const debugMode = false
+
+func (l logSink) Write(p []byte) (n int, err error) {
+	if debugMode {
+		return fmt.Fprint(os.Stderr, string(p))
+	}
+	return 0, nil
+}
+
+var logger = log.New(&logSink{}, "DEBUG: ", log.Ldate|log.Ltime|log.Lshortfile)
 
 const (
 	// Construction parameters are okay, but no subprocess running.
@@ -152,15 +168,19 @@ func (pr *ProcRunner) RunIt(cmdr Commander, d time.Duration) error {
 	// Don't defer the 'Unlock' call corresponding to this Lock.
 	// We must unlock well before exiting this function because we intend to run
 	// a potentially long-running command.
+	logger.Println("beginning runit")
 	pr.mutexState.Lock()
 	switch pr.getState() {
 	case stateError:
+		logger.Println("entering state error")
 		pr.mutexState.Unlock()
 		return fmt.Errorf("subprocess in error state, cannot recover")
 	case stateRunning:
+		logger.Println("already running")
 		pr.mutexState.Unlock()
 		return fmt.Errorf("already running something")
 	case stateUninitialized:
+		logger.Println("in state uninitialized")
 		if err := pr.startSubprocess(); err != nil {
 			pr.enterStateError(err)
 			pr.mutexState.Unlock()
@@ -169,11 +189,13 @@ func (pr *ProcRunner) RunIt(cmdr Commander, d time.Duration) error {
 		// immediately enter stateIdle and do the run
 		fallthrough
 	case stateIdle:
+		logger.Println("in state idle, starting run")
 		if cmdr == nil {
 			pr.mutexState.Unlock()
 			return fmt.Errorf("provide a Commander")
 		}
 		// enter stateRunning
+		logger.Println("entering state running")
 		_, err := pr.filter.BeginRun(cmdr, pr.stdIn)
 		pr.mutexState.Unlock()
 		if err != nil {
@@ -185,8 +207,8 @@ func (pr *ProcRunner) RunIt(cmdr Commander, d time.Duration) error {
 			pr.enterStateError(err)
 			return err
 		}
-		// exit stateRunning, back to stateIdle.  This relies on sentinelFilter
-		// working as expected.
+		// exit stateRunning, back to stateIdle.
+		// This relies on sentinelFilter working as expected.
 		return nil
 	default:
 		pr.mutexState.Unlock()
@@ -229,9 +251,20 @@ func (pr *ProcRunner) startSubprocess() (err error) {
 	// and stdOut, this will hang, and chOut won't close.  The client is
 	// protected from this hang by the timeout sent into RunIt.
 	go func() {
+		logger.Println("waiting for subprocess exit")
+
 		waitErr := pr.cmd.Wait()
-		if waitErr != nil {
-			pr.infraErrors.log(fmt.Errorf("subprocess returns %w", waitErr))
+		// find out at runtime if this is true by checking second value
+
+		logger.Println("subprocess finished")
+		if exitErr, isExitError := waitErr.(*exec.ExitError); isExitError {
+			logger.Println("detected exit error")
+			pr.enterStateError(
+				errors.Wrap(exitErr, "subprocess exited with err"))
+		} else if waitErr != nil {
+			logger.Println("some other exit failure")
+			pr.enterStateError(
+				errors.Wrap(exitErr, "subprocess erred out"))
 		}
 		// The following should end quickly if cmd.Wait worked.
 		scanWg.Wait()
@@ -330,14 +363,20 @@ func (pr *ProcRunner) scanStdErr(wg *sync.WaitGroup) {
 
 func (pr *ProcRunner) scanStdOut(wg *sync.WaitGroup) {
 	defer wg.Done()
+	logger.Println("Entered scanStdOut")
+	count := 0
 	for pr.outScanner.Scan() {
 		line := pr.outScanner.Bytes()
+		count++
+		logger.Printf("Managed to read line: %s\n", line)
 		send := make([]byte, len(line))
 		copy(send, line)
 		pr.chOut <- send
 	}
+	logger.Printf("scanStdOut ended, read %d lines!\n", count)
 	if err := pr.outScanner.Err(); err != nil {
 		// This should be rare.
+		logger.Printf("scanStdOut 'rare' error was %s!\n", err.Error())
 		pr.enterStateError(fmt.Errorf("outScanner saw : %w", err))
 	}
 }

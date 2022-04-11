@@ -1,3 +1,4 @@
+//go:build tools
 // +build tools
 
 // This file exists only to declare dependencies on Go-based executables.

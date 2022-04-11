@@ -116,15 +116,24 @@ func (cw *sentinelFilter) IssueSentinelsAndFilter(
 	if d == 0 {
 		d = defaultSentinelDuration
 	}
+	logger.Printf("duration = %s", d)
+	logger.Printf("out sentinel = %s", cw.outSentinel.String())
+
 	// If this is empty, the client is presumably depending on the CLI to send
 	// a prompt, and the outSentinel knows how to recognize the prompt.
 	if _, err = cw.issueCommand(cw.outSentinel.String()); err != nil {
 		return
 	}
+	if err != nil {
+		logger.Printf("issueCommand err = %s", err.Error())
+		return err
+	}
+
 	// Send the error sentinel command (if non-empty).  This should be a command
 	// that does nothing more than generate some harmless error message on stdErr,
 	// e.g. an attempt to use a non-existent command.
 	if cw.errSentinel != nil {
+		logger.Printf("err sentinel = %v", cw.errSentinel.String())
 		if _, err = cw.issueCommand(cw.errSentinel.String()); err != nil {
 			return
 		}
@@ -132,6 +141,9 @@ func (cw *sentinelFilter) IssueSentinelsAndFilter(
 
 	done := make(chan error)
 	go cw.filterForSentinels(done, chOut, chErr)
+
+	logger.Println("IssueSentinelsAndFilter starting select")
+
 	select {
 	case <-time.After(d):
 		err = cw.expirationError(d)
@@ -148,6 +160,7 @@ func (cw *sentinelFilter) filterForSentinels(
 	var errOut, errErr error
 	var scanWg sync.WaitGroup
 	scanWg.Add(1)
+
 	go cw.filterForSentinel("Out", &errOut, &scanWg, cw.outSentinel, chOut)
 	if cw.errSentinel != nil {
 		scanWg.Add(1)
@@ -169,14 +182,18 @@ func (cw *sentinelFilter) filterForSentinel(
 	title string, err *error,
 	wg *sync.WaitGroup, sentinel Commander, ch <-chan []byte) {
 	defer wg.Done()
+	logger.Printf("starting %s filter for %s", title, sentinel)
 	for {
 		line, stillOpen := <-ch
+		logger.Printf("outCh returns line line: %v", line)
 		if !stillOpen {
+			logger.Println("outCh appears closed")
 			*err = fmt.Errorf(
 				"std%s closed while or before running %q, no sentinel detected",
 				title, cw.theCmdr.String())
 			return
 		}
+		logger.Printf("outCh returns line: %v", line)
 		panicIfNotActuallyALine(line)
 		if !sentinel.Success() {
 			// Send the line to the sentinel value detector first,
