@@ -61,8 +61,11 @@ func (cw *sentinelFilter) issueCommand(c string) (string, error) {
 	if len(c) == 0 {
 		return "", nil
 	}
+	logger.Printf("issueCommand called with: %q\n", c)
 	fullCmd := assureCmdLineTermination([]byte(c), cw.terminator)
 	n, err := io.WriteString(cw.stdIn, fullCmd)
+	logger.Printf("wrote command to subprocess stdIn: %q\n", fullCmd)
+
 	if err != nil || n != len(fullCmd) {
 		err = fmt.Errorf(
 			"wrote %d of %d bytes of command %q - %w", n, len(fullCmd), fullCmd, err)
@@ -107,17 +110,17 @@ func (cw *sentinelFilter) isRunning() bool {
 func (cw *sentinelFilter) IssueSentinelsAndFilter(
 	chOut <-chan []byte, // scan this for command output
 	chErr <-chan []byte, // scan this for command errors
-	d time.Duration, // time limit on finding the sentinel value
+	timeOut time.Duration, // time limit on finding the sentinel value
 ) (err error) {
 	if !cw.isRunning() {
 		return fmt.Errorf("nothing is running")
 	}
 	defer cw.resetFilter()
-	if d == 0 {
-		d = defaultSentinelDuration
+	if timeOut == 0 {
+		timeOut = defaultSentinelDuration
 	}
-	logger.Printf("duration = %s", d)
-	logger.Printf("out sentinel = %s", cw.outSentinel.String())
+	logger.Printf("entering IssueSentinelsAndFilter with timeOut = %s", timeOut)
+	logger.Printf("out sentinel = %q", cw.outSentinel.String())
 
 	// If this is empty, the client is presumably depending on the CLI to send
 	// a prompt, and the outSentinel knows how to recognize the prompt.
@@ -142,12 +145,12 @@ func (cw *sentinelFilter) IssueSentinelsAndFilter(
 	done := make(chan error)
 	go cw.filterForSentinels(done, chOut, chErr)
 
-	logger.Println("IssueSentinelsAndFilter starting select")
+	logger.Printf("Waiting %s to see sentinel\n", timeOut)
 
 	select {
-	case <-time.After(d):
-		err = cw.expirationError(d)
-	case err = <-done:
+	case <-time.After(timeOut):
+		err = cw.expirationError(timeOut)
+	case err = <-done: // This is the one we want, hopefully with err==nil
 	}
 	return
 }
@@ -170,10 +173,12 @@ func (cw *sentinelFilter) filterForSentinels(
 	}
 	scanWg.Wait()
 	if errOut != nil {
+		logger.Println("filterForSentinels found errOut = " + errOut.Error())
 		done <- errOut
 		return
 	}
 	if errErr != nil {
+		logger.Println("filterForSentinels found errErr = " + errOut.Error())
 		done <- errErr
 	}
 }
@@ -182,10 +187,10 @@ func (cw *sentinelFilter) filterForSentinel(
 	title string, err *error,
 	wg *sync.WaitGroup, sentinel Commander, ch <-chan []byte) {
 	defer wg.Done()
-	logger.Printf("starting %s filter for %s", title, sentinel)
+	logger.Printf("starting %q filter for command %q", title, sentinel)
 	for {
 		line, stillOpen := <-ch
-		logger.Printf("outCh returns line line: %v", line)
+		logger.Printf("outCh returns line: %s", string(line))
 		if !stillOpen {
 			logger.Println("outCh appears closed")
 			*err = fmt.Errorf(
@@ -193,17 +198,19 @@ func (cw *sentinelFilter) filterForSentinel(
 				title, cw.theCmdr.String())
 			return
 		}
-		logger.Printf("outCh returns line: %v", line)
 		panicIfNotActuallyALine(line)
 		if !sentinel.Success() {
+			logger.Printf("sending line %q to sentinel\n", string(line))
 			// Send the line to the sentinel value detector first,
 			// to see if we're done.
 			if _, *err = sentinel.Write(line); *err != nil {
+				logger.Printf("Catastrophe err=%s\n", *err)
 				// Catastrophe of some kind.
 				return
 			}
 		}
 		if sentinel.Success() {
+			logger.Printf("sentinel success!\n")
 			// The line has the sentinel value; we're done.
 			return
 		}

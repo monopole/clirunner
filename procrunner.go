@@ -69,10 +69,10 @@ type runnerState int
 
 type logSink struct{}
 
-const debugMode = false
+var DebugMode = false
 
 func (l logSink) Write(p []byte) (n int, err error) {
-	if debugMode {
+	if DebugMode {
 		return fmt.Fprint(os.Stderr, string(p))
 	}
 	return 0, nil
@@ -131,6 +131,7 @@ func (pr *ProcRunner) enterStateUninitialized() {
 
 // NewProcRunner returns a new ProcRunner, or an error on bad parameters.
 func NewProcRunner(params *Parameters) (*ProcRunner, error) {
+	logger.Println("creating new ProcRunner")
 	if err := params.Validate(); err != nil {
 		return nil, err
 	}
@@ -164,11 +165,11 @@ func (pr *ProcRunner) RunIgnoringOutput(c string) error {
 //
 // If RunIt returns an error, then the ProcRunner should be abandoned.
 // There's no general way to interrupt and "fix" a subprocess.
-func (pr *ProcRunner) RunIt(cmdr Commander, d time.Duration) error {
+func (pr *ProcRunner) RunIt(cmdr Commander, timeOut time.Duration) error {
 	// Don't defer the 'Unlock' call corresponding to this Lock.
 	// We must unlock well before exiting this function because we intend to run
 	// a potentially long-running command.
-	logger.Println("beginning runit")
+	logger.Printf("beginning RunIt for command %q\n", cmdr.String())
 	pr.mutexState.Lock()
 	switch pr.getState() {
 	case stateError:
@@ -201,9 +202,9 @@ func (pr *ProcRunner) RunIt(cmdr Commander, d time.Duration) error {
 		if err != nil {
 			return err
 		}
-		// The following call should consume no more than "d" wall clock time.
+		// The following call should consume no more than "timeOut" wall clock time.
 		if err = pr.filter.IssueSentinelsAndFilter(
-			pr.chOut, pr.chErr, d); err != nil {
+			pr.chOut, pr.chErr, timeOut); err != nil {
 			pr.enterStateError(err)
 			return err
 		}
@@ -228,6 +229,8 @@ func (pr *ProcRunner) startSubprocess() (err error) {
 		return err
 	}
 
+	logger.Printf("starting subprocess: %q\n", pr.cmd.String())
+
 	// Assure that the subprocess is started without error before
 	// doing anything else.
 	// The I/O pipes for the subprocess are buffered; it can wait.
@@ -235,6 +238,7 @@ func (pr *ProcRunner) startSubprocess() (err error) {
 		return fmt.Errorf("trying to start %s - %w", pr.params.Path, err)
 	}
 
+	logger.Printf("seems to have started ok\n")
 	// Scan the subprocess' output.
 	// Send its stdErr and stdOut to a combined output channel.
 	// There might be lots of output, so buffer the channel.
@@ -258,11 +262,11 @@ func (pr *ProcRunner) startSubprocess() (err error) {
 
 		logger.Println("subprocess finished")
 		if exitErr, isExitError := waitErr.(*exec.ExitError); isExitError {
-			logger.Println("detected exit error")
+			logger.Println("detected exit error: " + exitErr.Error())
 			pr.enterStateError(
 				errors.Wrap(exitErr, "subprocess exited with err"))
 		} else if waitErr != nil {
-			logger.Println("some other exit failure")
+			logger.Println("encounter some error other than exit failure")
 			pr.enterStateError(
 				errors.Wrap(exitErr, "subprocess erred out"))
 		}
@@ -368,7 +372,7 @@ func (pr *ProcRunner) scanStdOut(wg *sync.WaitGroup) {
 	for pr.outScanner.Scan() {
 		line := pr.outScanner.Bytes()
 		count++
-		logger.Printf("Managed to read line: %s\n", line)
+		logger.Printf("Managed to read line: %s\n", string(line))
 		send := make([]byte, len(line))
 		copy(send, line)
 		pr.chOut <- send

@@ -9,7 +9,11 @@ type KondoCommander struct {
 }
 
 // Write accepts input to discard.
-func (c *KondoCommander) Write(_ []byte) (int, error) { return 0, nil }
+// Great place to debugging output.
+func (c *KondoCommander) Write(s []byte) (int, error) {
+	// For debugging: fmt.Printf("Kondo saw: %q\n", string(s))
+	return 0, nil
+}
 
 // Success always returns true.
 func (c *KondoCommander) Success() bool { return true }
